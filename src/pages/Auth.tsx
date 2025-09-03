@@ -14,7 +14,8 @@ const Auth = () => {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -34,7 +35,7 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
+    if (!formData.phone || !formData.password) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -43,7 +44,7 @@ const Auth = () => {
       return;
     }
 
-    const success = await login(formData.email, formData.password);
+    const success = await login(formData.phone, formData.password);
     if (success) {
       toast({
         title: "Welcome back!",
@@ -52,7 +53,7 @@ const Auth = () => {
     } else {
       toast({
         title: "Login Failed",
-        description: "Invalid email or password. Try email: alex@example.com, password: password",
+        description: "Invalid phone number or password.",
         variant: "destructive"
       });
     }
@@ -60,7 +61,7 @@ const Auth = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.username || !formData.email || !formData.password) {
+    if (!formData.name || !formData.phone || !formData.email || !formData.password) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -87,7 +88,7 @@ const Auth = () => {
       return;
     }
 
-    const success = await register(formData.username, formData.email, formData.password);
+    const success = await register(formData.name, formData.phone, formData.email, formData.password);
     if (success) {
       toast({
         title: "Account Created!",
@@ -96,7 +97,7 @@ const Auth = () => {
     } else {
       toast({
         title: "Registration Failed",
-        description: "Username or email already exists",
+        description: "Phone number or email already exists",
         variant: "destructive"
       });
     }
@@ -121,16 +122,17 @@ const Auth = () => {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="phone">Phone Number *</Label>
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={formData.phone}
                     onChange={handleInputChange}
                     disabled={isLoading}
                     className="h-12"
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -182,16 +184,31 @@ const Auth = () => {
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="name">Name *</Label>
                   <Input
-                    id="username"
-                    name="username"
+                    id="name"
+                    name="name"
                     type="text"
-                    placeholder="Choose a username"
-                    value={formData.username}
+                    placeholder="Enter your full name"
+                    value={formData.name}
                     onChange={handleInputChange}
                     disabled={isLoading}
                     className="h-12"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    disabled={isLoading}
+                    className="h-12"
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -268,9 +285,8 @@ const Auth = () => {
           </Tabs>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Demo credentials:</p>
-            <p><strong>Email:</strong> alex@example.com</p>
-            <p><strong>Password:</strong> password</p>
+            <p>Update the API_BASE_URL in AuthContext.tsx with your API domain</p>
+            <p>Required fields are marked with *</p>
           </div>
         </CardContent>
       </Card>

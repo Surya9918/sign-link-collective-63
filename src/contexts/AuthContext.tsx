@@ -1,107 +1,98 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiService } from '@/lib/api';
 
 interface User {
-  id: string;
-  username: string;
+  phone: string;
+  name: string;
   email: string;
-  contributionsCount: number;
-  badgesEarned: string[];
-  joinedDate: string;
+  gender: string;
+  date_of_birth: string;
+  place: string;
+  id: string;
+  is_active: boolean;
+  has_given_consent: boolean;
+  consent_given_at: string;
+  last_login_at: string;
+  created_at: string;
+  updated_at: string;
+  // Keep legacy fields for compatibility
+  username?: string;
+  contributionsCount?: number;
+  badgesEarned?: string[];
+  joinedDate?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  login: (phone: string, password: string) => Promise<boolean>;
+  register: (name: string, phone: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users data
-const mockUsers: User[] = [
-  {
-    id: '1',
-    username: 'alex_signer',
-    email: 'alex@example.com',
-    contributionsCount: 45,
-    badgesEarned: ['First Contribution', 'Video Master', 'Community Helper'],
-    joinedDate: '2024-01-15'
-  },
-  {
-    id: '2',
-    username: 'maria_asl',
-    email: 'maria@example.com',
-    contributionsCount: 128,
-    badgesEarned: ['First Contribution', 'Video Master', 'Annotation Expert', 'Top Contributor'],
-    joinedDate: '2023-11-20'
-  }
-];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const savedUser = localStorage.getItem('signLanguageUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    // Check if user has a token and fetch user data
+    const checkAuth = async () => {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        try {
+          const userData = await apiService.getMe(token);
+          setUser(userData);
+        } catch (error) {
+          console.error('Error checking authentication:', error);
+          localStorage.removeItem('access_token');
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (phone: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = mockUsers.find(u => u.email === email);
-    if (foundUser && password === 'password') { // Mock password check
-      setUser(foundUser);
-      localStorage.setItem('signLanguageUser', JSON.stringify(foundUser));
+    try {
+      const data = await apiService.login(phone, password);
+      localStorage.setItem('access_token', data.access_token);
+      
+      // Fetch user data after successful login
+      const userData = await apiService.getMe(data.access_token);
+      setUser(userData);
       setIsLoading(false);
       return true;
-    }
-    
-    setIsLoading(false);
-    return false;
-  };
-
-  const register = async (username: string, email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if user already exists
-    const existingUser = mockUsers.find(u => u.email === email || u.username === username);
-    if (existingUser) {
+    } catch (error) {
+      console.error('Login error:', error);
       setIsLoading(false);
       return false;
     }
+  };
+
+  const register = async (name: string, phone: string, email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
     
-    const newUser: User = {
-      id: Date.now().toString(),
-      username,
-      email,
-      contributionsCount: 0,
-      badgesEarned: [],
-      joinedDate: new Date().toISOString().split('T')[0]
-    };
-    
-    mockUsers.push(newUser);
-    setUser(newUser);
-    localStorage.setItem('signLanguageUser', JSON.stringify(newUser));
-    setIsLoading(false);
-    return true;
+    try {
+      await apiService.register(name, phone, email, password);
+      // After successful registration, automatically log in
+      const loginSuccess = await login(phone, password);
+      setIsLoading(false);
+      return loginSuccess;
+    } catch (error) {
+      console.error('Registration error:', error);
+      setIsLoading(false);
+      return false;
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('signLanguageUser');
+    localStorage.removeItem('access_token');
   };
 
   return (
